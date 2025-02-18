@@ -1,85 +1,98 @@
 
-# Téléchargeur de pièces jointes d'email via Microsoft Graph
+# Microsoft Graph Email Attachment Downloader
 
-Ce script Python interagit avec l'API Microsoft Graph pour récupérer les emails et télécharger leurs pièces jointes. Le script filtre les emails reçus aujourd'hui et vérifie s'ils proviennent de certains expéditeurs. Si des pièces jointes sont trouvées, elles sont téléchargées et enregistrées dans un dossier nommé avec la date du jour sous le répertoire `attachments`.
+This Flask web application allows you to authenticate using Microsoft OAuth2, retrieve emails from a specified mailbox, and download email attachments from specific senders. The attachments are bundled into a ZIP file for easy download.
 
-## Prérequis
+## Prerequisites
 
-Pour exécuter ce script, vous devez avoir les éléments suivants :
+To run this script, you need the following:
 
-- Python 3.6 ou supérieur
-- Accès à l'API Microsoft Graph via une application Azure AD (pour l'authentification)
-- Un fichier `.env` pour stocker vos identifiants
+- A Microsoft Azure account
+- An Azure app registration with the required permissions
+- Python 3.7 or higher
+- Pip for installing dependencies
 
-### Bibliothèques Python requises
+## Setup
 
-Vous pouvez installer les bibliothèques nécessaires avec `pip` :
+### 1. Register Your Application in Azure AD
 
-```bash
-pip install msal requests python-dotenv pytz
-```
+Before running the script, you'll need to register your app in Azure Active Directory (Azure AD) and set the necessary API permissions:
 
-## Configuration
+- Go to [Azure Portal](https://portal.azure.com).
+- Navigate to **Azure Active Directory** > **App registrations** > **New registration**.
+- Note down the **Application (client) ID**, **Directory (tenant) ID**, and **Client Secret**. These will be required for configuring the script.
 
-### Créer une application Microsoft Azure AD :
+### 2. Install Dependencies
 
-1. Enregistrez une application dans le portail Azure.
-2. Ajoutez les autorisations d'API pour Microsoft Graph, spécifiquement `Mail.Read` et `Mail.ReadWrite` sous **Autorisations déléguées** ou **Autorisations d'application**.
-3. Obtenez le `Client ID`, le `Tenant ID`, et le `Client Secret` pour votre application.
-
-### Créer un fichier .env
-
-Le fichier `.env` stocke des informations sensibles telles que les identifiants de votre client et la boîte aux lettres que vous souhaitez accéder. Voici un exemple de la structure de votre fichier `.env` :
-
-```
-CLIENT_ID=your-client-id
-CLIENT_SECRET=your-client-secret
-TENANT_ID=your-tenant-id
-SENDERS=sender1@example.com,sender2@example.com  # Liste séparée par des virgules des adresses email des expéditeurs
-MAILBOX=your-mailbox@example.com  # La boîte aux lettres dont vous voulez récupérer les emails
-```
-
-## Fonctionnement
-
-Le script s'authentifie d'abord avec l'API Microsoft Graph en utilisant le flux d'identification par identifiants d'application avec MSAL (Microsoft Authentication Library).
-Il récupère les emails reçus aujourd'hui à l'aide du filtre `receivedDateTime`.
-Les emails sont vérifiés pour les pièces jointes. Si des pièces jointes sont trouvées, elles sont téléchargées et enregistrées dans un dossier nommé avec la date du jour.
-Le dossier est créé sous le répertoire `attachments`.
-
-### Structure des dossiers
-
-Les pièces jointes sont enregistrées dans la structure suivante :
-
-```
-/attachments
-    /YYYY-MM-DD
-        attachment1.pdf
-        attachment2.jpg
-```
-
-Où `YYYY-MM-DD` correspond à la date actuelle lorsque le script est exécuté.
-
-## Exécution du script
-
-Pour exécuter le script, utilisez la commande suivante :
+Make sure you have `pip` installed, then install the required dependencies:
 
 ```bash
-python run.py
+pip install -r requirements.txt
 ```
 
-Le script va :
+This will install:
 
-1. S'authentifier avec l'API Microsoft Graph à l'aide des identifiants dans le fichier `.env`.
-2. Récupérer les emails reçus aujourd'hui.
-3. Filtrer les emails par les adresses des expéditeurs spécifiées dans le fichier `.env`.
-4. Télécharger les pièces jointes de ces emails et les enregistrer dans un dossier nommé avec la date du jour.
+- `Flask` for the web framework.
+- `requests` for making HTTP requests.
+- `msal` for handling Microsoft OAuth authentication.
+- `python-dotenv` for loading environment variables.
+- `pytz` for handling timezones.
 
-## Dépannage
+### 3. Create a `.env` File
 
-- Assurez-vous que le `Client ID`, le `Client Secret`, le `Tenant ID`, et les autres variables d'environnement sont correctement définis dans le fichier `.env`.
-- Si vous rencontrez des problèmes d'authentification avec l'API, vérifiez que les autorisations requises sont accordées à votre application Azure.
-- Assurez-vous que votre boîte aux lettres est accessible et que vous utilisez la bonne adresse email.
+Create a `.env` file in the root directory of the project and add the following details:
 
-## Licence
+```bash
+CLIENT_ID=<your-client-id>
+CLIENT_SECRET=<your-client-secret>
+TENANT_ID=<your-tenant-id>
+MAILBOX=<your-mailbox-email>
+SENDERS=<comma-separated-email-addresses>
+```
 
-Ce projet est sous licence MIT - voir le fichier LICENSE pour plus de détails.
+- `CLIENT_ID`: Your Azure application's client ID.
+- `CLIENT_SECRET`: The client secret you generated for your Azure app.
+- `TENANT_ID`: The tenant ID for your Azure AD.
+- `MAILBOX`: The email address of the mailbox you want to retrieve emails from.
+- `SENDERS`: A comma-separated list of senders whose attachments you want to download.
+
+### 4. Run the Application
+
+Start the Flask web server by running:
+
+```bash
+python app.py
+```
+
+By default, the application will be accessible at `http://localhost:3000`.
+
+### 5. OAuth2 Authentication
+
+When you visit `http://localhost:3000`, you'll be redirected to Microsoft's OAuth2 login page. After logging in and consenting to the requested permissions, you'll be redirected back to the app. The app will then retrieve the emails from the specified mailbox and download the attachments from the specified senders.
+
+### 6. Download Attachments
+
+After successful authentication, the app will process emails received on the current day and download attachments from the specified senders. The attachments will be stored in a folder with the current date and then bundled into a ZIP file, which will be sent as a downloadable file.
+
+## Endpoints
+
+- `/`: Initiates the OAuth2 authentication flow.
+- `/token`: Handles the redirect from Microsoft after authentication and retrieves the access token.
+- `/download`: Retrieves and downloads email attachments from the specified senders.
+
+## Example Flow
+
+1. Visit `http://localhost:3000/`.
+2. Authenticate using Microsoft OAuth2.
+3. After authentication, the app fetches emails and attachments from the specified senders.
+4. The attachments are packaged into a ZIP file and presented for download.
+
+## Troubleshooting
+
+- **Authorization failed**: Make sure you entered the correct client ID, client secret, tenant ID, and mailbox.
+- **No attachments found**: Ensure the specified senders have emails with attachments within the timeframe you are querying.
+- **Invalid access token**: Re-authenticate to ensure a valid token is being used.
+
+## License
+
+This project is licensed under the MIT License.
