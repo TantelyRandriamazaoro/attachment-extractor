@@ -7,6 +7,11 @@ from file_handler import FileHandler
 def main():
     # Load environment variables
     load_dotenv()
+
+    # create the processed_emails.txt file if it doesn't exist yet 
+    if not os.path.exists('processed_emails.txt'):
+        with open('processed_emails.txt', 'w') as f:
+            f.write('')
     
     # Initialize components
     auth = MSGraphAuth()
