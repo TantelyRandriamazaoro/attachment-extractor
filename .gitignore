@@ -5,3 +5,5 @@ lib
 pyvenv.cfg
 .env
 attachments/*
+processed_emails.txt
+__pycache__/*
